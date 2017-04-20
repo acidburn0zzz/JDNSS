@@ -32,6 +32,7 @@ public class QueryTest
         Assert.assertEquals (query.toString(), expectedQuery);
     }
 
+    /*
     @Test
     public void parseSingleAdditionalTest()
     {
@@ -97,4 +98,5 @@ public class QueryTest
         query.parseAdditional(bytes, 2);
         Assert.assertNull(query.optrr);
     }
+    */
 }

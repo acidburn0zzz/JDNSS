@@ -3,6 +3,7 @@ package edu.msudenver.cs.jdnss;
 import org.junit.Assert;
 import org.junit.Test;
 
+/*
 public class OPTRRTest {
     @Test
     public void doBitTest() {
@@ -111,3 +112,4 @@ public class OPTRRTest {
         Assert.assertEquals(281, rr.getByteSize());
     }
 }
+*/

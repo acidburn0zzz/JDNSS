@@ -48,10 +48,16 @@ public class Query
     private byte[] additional = new byte[0];
     private byte[] authority = new byte[0];
 
-    private byte[] savedAdditional;
-    private int savedNumAdditionals;
+    int additionalType;
+    int additionalPayloadSize;
+    int additionalVersion;
+    boolean additionalDO;
+    int additionalZ;
+    int additionalRcode;
+    int additionalRdlen;
+    byte[] additionalRdata;
+    byte[] savedAdditional;
 
-    public OPTRR optrr;
     private int maximumPayload = 512;
     private boolean doDNSSEC = false;
 
@@ -214,36 +220,53 @@ public class Query
             location += 2;
         }
 
+        /*
+        ** This is a query and there is an addtional. It has to be an EDNS0
+        ** OPT RR.
+        ** The fixed part of an OPT RR is structured as follows:
+        ** Field Name   Field Type     Description
+        ** ------------------------------------------------------
+        ** NAME         domain name    empty (root domain)
+        ** TYPE         u_int16_t      OPT
+        ** CLASS        u_int16_t      sender's UDP payload size
+        ** TTL          u_int32_t      extended RCODE and flags
+        ** RDLEN        u_int16_t      describes RDATA
+        ** RDATA        octet stream   {attribute,value} pairs
+        */
+
+        // I'm assuming only one here.,
         if (numAdditionals > 0)
         {
-            int length = buffer.length - location;
-            savedNumAdditionals = numAdditionals;
-            savedAdditional = new byte[length];
-            System.arraycopy(buffer, location, savedAdditional, 0, length);
-            parseAdditional(savedAdditional, savedNumAdditionals);
-            buffer = Utils.trimByteArray(buffer, location);
-            numAdditionals = 0;
-            rebuild();
-        }
-    }
+            // set this aside as we'll copy it back out verbatum.
+            int len = buffer.length - location + 1;
+            savedAdditional = new byte[len];
+            System.arraycopy(buffer, location, savedAdditional, 0, len);
 
-    public void parseAdditional(byte[] additional, int rrCount)
-    {
-        try {
-            int rrLocation = 0;
-            for (int i = 0; i < rrCount; i++) {
-                byte[] bytes = new byte[additional.length - rrLocation];
-                System.arraycopy(additional, rrLocation, bytes, 0, additional.length - rrLocation);
-                BasicRR rr = new BasicRR(bytes);
+            // name is empty, so just a 0
+            Assertion.aver(buffer[location] == 0);
 
-                if (rr.getType() == 41) {
-                    optrr = new OPTRR(bytes);
-                }
-                rrLocation = rrLocation + rr.getByteSize() + 1;
-            }
-        } catch(Exception ex)
-        {
-            //RETURN Invalid
+            additionalType =
+                Utils.addThem(buffer[++location], buffer[++location]);
+            Assertion.aver(additionalType == 41);
+
+            additionalPayloadSize = 
+                Utils.addThem(buffer[++location], buffer[++location]);
+
+            additionalRcode = buffer[++location];
+
+            additionalVersion = buffer[++location];
+
+            additionalDO = (buffer[location] & 0x80) == 0x80;
+
+            additionalZ =
+                Utils.addThem(buffer[++location], buffer[++location]);
+
+            additionalRdlen = 
+                Utils.addThem(buffer[++location], buffer[++location]);
+
+            additionalRdata = new byte[additionalRdlen];
+            System.arraycopy(buffer, location, additionalRdata,
+                0, additionalRdlen);
         }
     }
 
@@ -361,10 +384,10 @@ public class Query
         logger.traceEntry(new ObjectMessage(name));
         logger.traceEntry(new ObjectMessage(which));
 
-        if (optrr != null)
+        if (numAdditionals > 0)
         {
-            maximumPayload = optrr.payloadSize;
-            doDNSSEC = optrr.DOBit;
+            maximumPayload = additionalPayloadSize;
+            doDNSSEC = additionalDO;
         }
 
         else
@@ -464,10 +487,9 @@ public class Query
 
     private void addAdditionals()
     {
-        if (savedNumAdditionals > 0)
+        if (additionalDO)
         {
             additional = Utils.combine(additional, savedAdditional);
-            numAdditionals += savedNumAdditionals;
         }
 
         if (numAdditionals > 0)
