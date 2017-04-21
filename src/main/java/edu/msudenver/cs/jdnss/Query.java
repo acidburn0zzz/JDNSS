@@ -234,15 +234,29 @@ public class Query
         ** RDATA        octet stream   {attribute,value} pairs
         */
 
+        logger.trace(numAdditionals);
         // I'm assuming only one here.,
         if (numAdditionals > 0)
         {
             // set this aside as we'll copy it back out verbatum.
-            int len = buffer.length - location + 1;
+            int len = buffer.length - location;
+            logger.trace(len);
+
+            logger.trace(location);
+
             savedAdditional = new byte[len];
-            System.arraycopy(buffer, location, savedAdditional, 0, len);
+            logger.trace(location);
+            try
+            {
+                System.arraycopy(buffer, location, savedAdditional, 0, len);
+            }
+            catch (Exception e)
+            {
+                logger.trace(e);
+            }
 
             // name is empty, so just a 0
+            logger.trace(buffer[location]);
             Assertion.aver(buffer[location] == 0);
 
             additionalType =
@@ -251,18 +265,24 @@ public class Query
 
             additionalPayloadSize = 
                 Utils.addThem(buffer[++location], buffer[++location]);
+            logger.trace(additionalPayloadSize);
 
             additionalRcode = buffer[++location];
+            logger.trace(additionalRcode);
 
             additionalVersion = buffer[++location];
+            logger.trace(additionalVersion);
 
-            additionalDO = (buffer[location] & 0x80) == 0x80;
+            additionalDO = (buffer[++location] & 0x80) == 0x80;
+            logger.trace(buffer[location]);
+            logger.trace(additionalDO);
 
-            additionalZ =
-                Utils.addThem(buffer[++location], buffer[++location]);
+            additionalZ = buffer[++location];
+            logger.trace(additionalZ);
 
             additionalRdlen = 
                 Utils.addThem(buffer[++location], buffer[++location]);
+            logger.trace(additionalRdlen);
 
             additionalRdata = new byte[additionalRdlen];
             System.arraycopy(buffer, location, additionalRdata,
