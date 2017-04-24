@@ -32,7 +32,10 @@ class BindZone implements Zone
     private Hashtable<String, Vector> hSOA = new Hashtable<String, Vector>();
     private Hashtable<String, Vector> hDNSKEY = new Hashtable<String, Vector>();
     private Hashtable<String, Vector> hDNSRRSIG = new Hashtable<String, Vector>();
-    private Hashtable<String, Vector> hDNSNSEC = new Hashtable<String, Vector>();
+    private Hashtable<String, Vector> hNSEC = new Hashtable<String, Vector>();
+    private Hashtable<String, Vector> hNSEC3 = new Hashtable<String, Vector>();
+    private Hashtable<String, Vector> hNSEC3PARAM = new Hashtable<String, Vector>();
+
     private Hashtable<Integer, Hashtable> tableOfTables =
         new Hashtable<Integer, Hashtable>();
 
@@ -53,7 +56,9 @@ class BindZone implements Zone
         tableOfTables.put(Utils.SOA, hSOA);
         tableOfTables.put(Utils.DNSKEY, hDNSKEY);
         tableOfTables.put(Utils.RRSIG, hDNSRRSIG);
-        tableOfTables.put(Utils.NSEC, hDNSNSEC);
+        tableOfTables.put(Utils.NSEC, hNSEC);
+        tableOfTables.put(Utils.NSEC3, hNSEC3);
+        tableOfTables.put(Utils.NSEC3PARAM, hNSEC3PARAM);
     }
 
     /**
@@ -101,7 +106,7 @@ class BindZone implements Zone
         s += "HINFO: " + dumphash(hHINFO) + "\n";
         s += "DNSKEY: " + dumphash(hDNSKEY) + "\n";
         s += "DNSRRSIG: " + dumphash(hDNSRRSIG) + "\n";
-        s += "DNSNSEC: " + dumphash(hDNSNSEC) + "\n";
+        s += "DNSNSEC: " + dumphash(hNSEC) + "\n";
         s += "--------";
 
         return s;

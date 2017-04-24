@@ -10,6 +10,7 @@ import java.util.Calendar;
 import java.util.BitSet;
 import java.util.GregorianCalendar;
 import java.util.Hashtable;
+import java.util.ArrayList;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ObjectMessage;
@@ -93,6 +94,8 @@ public class Parser
         tokens.put("RRSIG", Integer.valueOf(Utils.RRSIG));
         tokens.put("NSEC", Integer.valueOf(Utils.NSEC));
         tokens.put("DNSKEY", Integer.valueOf(Utils.DNSKEY));
+        tokens.put("NSEC3", Integer.valueOf(Utils.NSEC3));
+        tokens.put("NSEC3PARAM", Integer.valueOf(Utils.NSEC3PARAM));
         tokens.put("DS", Integer.valueOf(Utils.DS));
         tokens.put("$INCLUDE", Integer.valueOf(Utils.INCLUDE));
         tokens.put("$ORIGIN", Integer.valueOf(Utils.ORIGIN));
@@ -239,6 +242,7 @@ public class Parser
         }
 
         // if (a.matches("[a-zA-Z0-9/\\+]+(==?)?"))
+        logger.fatal(inBase64);
         if (inBase64)
         {
             StringValue = a.trim();
@@ -417,6 +421,8 @@ public class Parser
 
     private boolean isARR(int which)
     {
+        logger.traceEntry(Integer.toString(which));
+
         switch (which)
         {
             case Utils.A: case Utils.NS: case Utils.CNAME:
@@ -425,13 +431,18 @@ public class Parser
             case Utils.A6: case Utils.DNAME: case Utils.DS:
             case Utils.RRSIG: case Utils.NSEC: case Utils.DNSKEY:
             case Utils.INCLUDE: case Utils.ORIGIN: case Utils.TTL:
+            case Utils.NSEC3: case Utils.NSEC3PARAM:
+                logger.traceExit(true);
                 return true;
         }
+        logger.traceExit(false);
         return false;
     }
 
     private void doNSEC()
     {
+        logger.traceEntry();
+
         boolean paren = false;
 
         Assertion.aver(getNextToken() == DN,
@@ -486,10 +497,13 @@ public class Parser
 
         zone.add(currentName, new DNSNSECRR(currentName, currentTTL,
             nextDomainName, b));
+        logger.traceExit(false);
     }
 
     private void doDNSKEY()
     {
+        logger.traceEntry();
+
         Assertion.aver(getNextToken() == INT,
             "Expecting number at line " + st.lineno());
         int flags = intValue;
@@ -521,12 +535,62 @@ public class Parser
         zone.add(currentName,
             new DNSKEYRR(currentName, currentTTL, flags, protocol,
             algorithm, publicKey));
+        logger.traceExit(false);
+    }
+
+    private void doNSEC3()
+    {
+        logger.traceEntry();
+
+        Assertion.aver(getNextToken() == INT,
+            "Expecting number at line " + st.lineno());
+        int hashAlgorithm = intValue;
+
+        Assertion.aver(getNextToken() == INT,
+            "Expecting number at line " + st.lineno());
+        int flags = intValue;
+
+        Assertion.aver(getNextToken() == INT,
+            "Expecting number at line " + st.lineno());
+        int iterations = intValue;
+
+        // really should look for hex.
+        Assertion.aver(getNextToken() == DN,
+            "Expecting domain name  at line " + st.lineno());
+        String salt = StringValue;
+
+        Assertion.aver(getNextToken() == LPAREN,
+            "Expecting left paren at line " + st.lineno());
+
+        // this is probably cheating as this is supposed to be Base 32.
+        String nextHashedOwnerName = "";
+        inBase64 = true;
+        while (getNextToken() == BASE64)
+        {
+            nextHashedOwnerName += StringValue;
+        }
+        inBase64 = false;
+
+        ArrayList<String> types = new ArrayList<String>();
+        while (getNextToken() != RPAREN)
+        {
+            types.add(StringValue);
+        }
+
+        NSEC3RR d = new NSEC3RR(currentName, currentTTL, hashAlgorithm,
+            flags, iterations, salt, nextHashedOwnerName,
+            types.toArray(new String[0]));
+        zone.add(currentName, d);
+        logger.traceExit(false);
     }
 
     private void doRRSIG()
     {
-        int typeCovered =(getNextToken());
-        Assertion.aver(isARR(typeCovered));
+        logger.traceEntry();
+
+        int typeCovered = getNextToken();
+        Assertion.aver(isARR(typeCovered),
+            typeCovered + " not covered with RRSIG on line " + st.lineno());
 
         Assertion.aver(getNextToken() == INT,
             "Expecting number at line " + st.lineno());
@@ -540,12 +604,12 @@ public class Parser
             "Expecting number at line " + st.lineno());
         int originalTTL = intValue;
 
+        Assertion.aver(getNextToken() == LPAREN,
+            "Expecting left paren at line " + st.lineno());
+
         Assertion.aver(getNextToken() == DATE,
             "Expecting DATE at line " + st.lineno());
         int expiration = intValue;
-
-        Assertion.aver(getNextToken() == LPAREN,
-            "Expecting left paren at line " + st.lineno());
 
         Assertion.aver(getNextToken() == DATE,
             "Expecting DATE at line " + st.lineno());
@@ -575,6 +639,7 @@ public class Parser
             algorithm, labels, originalTTL, expiration, inception, signersName,
             signature);
         zone.add(currentName, d);
+        logger.traceExit(false);
     }
 
     private void switches(final int t)
@@ -825,6 +890,7 @@ public class Parser
                                     case Utils.RRSIG: doRRSIG(); break;
                                     case Utils.NSEC: doNSEC(); break;
                                     case Utils.DNSKEY: doDNSKEY(); break;
+                                    case Utils.NSEC3: doNSEC3(); break;
                                     default: switches(t); break;
                                 }
                                 done = true;
@@ -868,6 +934,12 @@ public class Parser
                         case Utils.NSEC:
                         {
                             doNSEC();
+                            done = true;
+                            break;
+                        }
+                        case Utils.NSEC3:
+                        {
+                            doNSEC3();
                             done = true;
                             break;
                         }

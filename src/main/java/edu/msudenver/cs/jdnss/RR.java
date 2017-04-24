@@ -552,6 +552,32 @@ class DNSKEYRR extends RR
     }
 }
 
+class NSEC3RR extends RR
+{
+    private int hashAlgorithm;
+    private int flags;
+    private int iterations;
+    private String salt;
+    private String nextHashedOwnerName;
+    private String[] types;
+
+    NSEC3RR(String domain, int TTL, int hashAlgorithm, int flags,
+        int iterations, String salt, String nextHashedOwnerName, String[] types)
+    {
+        super(domain, Utils.NSEC3, TTL);
+
+        this.hashAlgorithm = hashAlgorithm;
+        this.flags = flags;
+        this.iterations = iterations;
+        this.salt = salt;
+        this.nextHashedOwnerName = nextHashedOwnerName;
+        this.types = types;
+    }
+
+    protected byte[] getBytes()
+    { return null; }
+}
+
 class DNSRRSIGRR extends RR
 {
     private int typeCovered;
