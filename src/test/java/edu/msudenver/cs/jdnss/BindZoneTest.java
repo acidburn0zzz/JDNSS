@@ -36,7 +36,9 @@ public class BindZoneTest
             "HINFO: \n" +
             "DNSKEY: \n" +
             "DNSRRSIG: \n" +
-            "DNSNSEC: \n" +
+            "NSEC: \n" +
+            "NSEC3: \n" +
+            "NSEC3PARAM: \n" +
             "--------";
         Assert.assertEquals (z.toString(), expectedZ);
 

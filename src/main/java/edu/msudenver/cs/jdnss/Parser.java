@@ -538,6 +538,32 @@ public class Parser
         logger.traceExit(false);
     }
 
+    private void doNSEC3PARAM()
+    {
+        logger.traceEntry();
+
+        Assertion.aver(getNextToken() == INT,
+            "Expecting number at line " + st.lineno());
+        int hashAlgorithm = intValue;
+
+        Assertion.aver(getNextToken() == INT,
+            "Expecting number at line " + st.lineno());
+        int flags = intValue;
+
+        Assertion.aver(getNextToken() == INT,
+            "Expecting number at line " + st.lineno());
+        int iterations = intValue;
+
+        // really should look for hex.
+        Assertion.aver(getNextToken() == DN,
+            "Expecting domain name  at line " + st.lineno());
+        String salt = StringValue;
+
+        NSEC3PARAMRR d = new NSEC3PARAMRR(currentName, currentTTL,
+            hashAlgorithm, flags, iterations, salt);
+        zone.add(currentName, d);
+        logger.traceExit();
+    }
     private void doNSEC3()
     {
         logger.traceEntry();
@@ -581,7 +607,7 @@ public class Parser
             flags, iterations, salt, nextHashedOwnerName,
             types.toArray(new String[0]));
         zone.add(currentName, d);
-        logger.traceExit(false);
+        logger.traceExit();
     }
 
     private void doRRSIG()
@@ -639,7 +665,7 @@ public class Parser
             algorithm, labels, originalTTL, expiration, inception, signersName,
             signature);
         zone.add(currentName, d);
-        logger.traceExit(false);
+        logger.traceExit();
     }
 
     private void switches(final int t)
@@ -891,6 +917,7 @@ public class Parser
                                     case Utils.NSEC: doNSEC(); break;
                                     case Utils.DNSKEY: doDNSKEY(); break;
                                     case Utils.NSEC3: doNSEC3(); break;
+                                    case Utils.NSEC3PARAM: doNSEC3PARAM(); break;
                                     default: switches(t); break;
                                 }
                                 done = true;
@@ -940,6 +967,12 @@ public class Parser
                         case Utils.NSEC3:
                         {
                             doNSEC3();
+                            done = true;
+                            break;
+                        }
+                        case Utils.NSEC3PARAM:
+                        {
+                            doNSEC3PARAM();
                             done = true;
                             break;
                         }

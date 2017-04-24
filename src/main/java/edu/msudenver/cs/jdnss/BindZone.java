@@ -106,7 +106,9 @@ class BindZone implements Zone
         s += "HINFO: " + dumphash(hHINFO) + "\n";
         s += "DNSKEY: " + dumphash(hDNSKEY) + "\n";
         s += "DNSRRSIG: " + dumphash(hDNSRRSIG) + "\n";
-        s += "DNSNSEC: " + dumphash(hNSEC) + "\n";
+        s += "NSEC: " + dumphash(hNSEC) + "\n";
+        s += "NSEC3: " + dumphash(hNSEC3) + "\n";
+        s += "NSEC3PARAM: " + dumphash(hNSEC3PARAM) + "\n";
         s += "--------";
 
         return s;

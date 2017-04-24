@@ -41,6 +41,8 @@ public class Utils
     public static final int RRSIG   = 46;
     public static final int NSEC    = 47;
     public static final int DNSKEY  = 48;
+    public static final int NSEC3       = 50;
+    public static final int NSEC3PARAM  = 51;
     public static final int INCLUDE = 256;
     public static final int ORIGIN  = 257;
     public static final int TTL     = 258;
@@ -76,6 +78,8 @@ public class Utils
         StringToType.put("DS", DS);
         StringToType.put("RRSIG", RRSIG);
         StringToType.put("NSEC", NSEC);
+        StringToType.put("NSEC3", NSEC3);
+        StringToType.put("NSEC3PARAM", NSEC3PARAM);
         StringToType.put("DNSKEY", DNSKEY);
         StringToType.put("INCLUDE", INCLUDE);
         StringToType.put("ORIGIN", ORIGIN);

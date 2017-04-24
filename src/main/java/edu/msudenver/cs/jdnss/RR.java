@@ -575,7 +575,29 @@ class NSEC3RR extends RR
     }
 
     protected byte[] getBytes()
-    { return null; }
+    { Assertion.aver(false); return null; }
+}
+
+class NSEC3PARAMRR extends RR
+{
+    private int hashAlgorithm;
+    private int flags;
+    private int iterations;
+    private String salt;
+
+    NSEC3PARAMRR(String domain, int TTL, int hashAlgorithm, int flags,
+        int iterations, String salt)
+    {
+        super(domain, Utils.NSEC3PARAM, TTL);
+
+        this.hashAlgorithm = hashAlgorithm;
+        this.flags = flags;
+        this.iterations = iterations;
+        this.salt = salt;
+    }
+
+    protected byte[] getBytes()
+    { Assertion.aver(false); return null; }
 }
 
 class DNSRRSIGRR extends RR
@@ -656,7 +678,6 @@ class DNSRRSIGRR extends RR
         Assertion.aver(false);
         return 42;
     }
-
 
     public String toString()
     {
