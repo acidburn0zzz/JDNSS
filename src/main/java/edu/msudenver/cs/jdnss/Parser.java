@@ -11,6 +11,7 @@ import java.util.BitSet;
 import java.util.GregorianCalendar;
 import java.util.Hashtable;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ObjectMessage;
@@ -55,7 +56,8 @@ public class Parser
     private int currentTTL = -1;
 
     private StreamTokenizer st;
-    private Hashtable tokens;
+    private Hashtable<String, Integer> tokens =
+        new Hashtable<String, Integer>();
 
     private BindZone zone;
 
@@ -79,7 +81,6 @@ public class Parser
 
         initTokenizer(st);
 
-        tokens = new Hashtable();
         tokens.put("SOA", Integer.valueOf(Utils.SOA));
         tokens.put("IN", Integer.valueOf(IN));
         tokens.put("MX", Integer.valueOf(Utils.MX));
@@ -184,7 +185,7 @@ public class Parser
             c.set( Integer.parseInt(year), Integer.parseInt(month) - 1,
                 Integer.parseInt(day), Integer.parseInt(hour),
                 Integer.parseInt(minute), Integer.parseInt(second));
-            intValue =(int) c.getTime().getTime();
+            intValue = (int) c.getTime().getTime();
 
             logger.traceExit("DATE");
             return DATE;
@@ -304,7 +305,7 @@ public class Parser
                 /*
                 ** is it in the tokens hash?
                 */
-                Integer i =(Integer) tokens.get(a);
+                Integer i = tokens.get(a);
                 if (i != null)
                 {
                     final int j = i.intValue();
@@ -597,15 +598,15 @@ public class Parser
         }
         inBase64 = false;
 
-        ArrayList<String> types = new ArrayList<String>();
+        ArrayList<Integer> types = new ArrayList<Integer>();
         while (getNextToken() != RPAREN)
         {
-            types.add(StringValue);
+            types.add(Utils.mapStringToType(StringValue));
         }
+        Collections.sort(types);
 
         NSEC3RR d = new NSEC3RR(currentName, currentTTL, hashAlgorithm,
-            flags, iterations, salt, nextHashedOwnerName,
-            types.toArray(new String[0]));
+            flags, iterations, salt, nextHashedOwnerName, types);
         zone.add(currentName, d);
         logger.traceExit();
     }
@@ -630,12 +631,27 @@ public class Parser
             "Expecting number at line " + st.lineno());
         int originalTTL = intValue;
 
-        Assertion.aver(getNextToken() == LPAREN,
-            "Expecting left paren at line " + st.lineno());
+        // https://tools.ietf.org/html/rfc4034#section-3.3
 
-        Assertion.aver(getNextToken() == DATE,
-            "Expecting DATE at line " + st.lineno());
-        int expiration = intValue;
+        int tok = getNextToken();
+        int expiration = 0;
+
+        if (tok == LPAREN)
+        {
+            Assertion.aver(getNextToken() == DATE,
+                "Expecting DATE at line " + st.lineno());
+            expiration = intValue;
+        }
+        else if (tok == DATE)
+        {
+            expiration = intValue;
+            Assertion.aver(getNextToken() == LPAREN,
+                "Expecting left paren at line " + st.lineno());
+        }
+        else
+        {
+            Assertion.aver(false, "Unknown syntax at line " + st.lineno());
+        }
 
         Assertion.aver(getNextToken() == DATE,
             "Expecting DATE at line " + st.lineno());
@@ -651,7 +667,6 @@ public class Parser
 
         String signature = "";
         inBase64 = true;
-        int tok;
         while ((tok = getNextToken()) == BASE64)
         {
             signature += StringValue;
