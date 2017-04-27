@@ -243,7 +243,7 @@ public class Parser
         }
 
         // if (a.matches("[a-zA-Z0-9/\\+]+(==?)?"))
-        logger.fatal(inBase64);
+        // logger.fatal(inBase64);
         if (inBase64)
         {
             StringValue = a.trim();
